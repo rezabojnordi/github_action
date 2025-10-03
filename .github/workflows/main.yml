@@ -51,9 +51,17 @@ jobs:
               python3 -m venv venv
             fi
             
-            # Step 3: Activate the virtual environment and install dependencies.
-            echo ">>> Activating virtual environment and installing requirements..."
+            # Step 3: Activate venv and install dependencies.
+            echo ">>> Activating virtual environment..."
             source venv/bin/activate
+            
+            # FIX: Force install a compatible version of Werkzeug before other requirements.
+            # This fixes the "ImportError: cannot import name 'url_quote'".
+            # Flask 2.2.2 is not compatible with Werkzeug >= 3.0.
+            echo ">>> Installing compatible Werkzeug version to fix dependency issue..."
+            pip install "Werkzeug<3.0"
+            
+            echo ">>> Installing requirements from requirements.txt..."
             pip install -r requirements.txt
             
             # Step 4: Ensure tmux is installed.
