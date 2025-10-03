@@ -1,4 +1,4 @@
-name: Simple Deploy to Server
+name: Robust Deploy to Server
 
 on:
   push:
@@ -21,20 +21,50 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            # به پوشه پروژه بروید
-            cd /home/ubuntu24/my-api
+            # --- Configuration ---
+            # The absolute path to your project directory on the server.
+            # !! IMPORTANT: Change this if your username is not 'ubuntu24' !!
+            PROJECT_DIR="/home/ubuntu24/my-api"
             
-            # آخرین تغییرات را بگیرید
-            git pull
+            # The repository URL is automatically constructed from GitHub context.
+            REPO_URL="https://github.com/${{ github.repository }}.git"
             
-            # محیط مجازی را فعال کنید (بسیار مهم)
+            # --- Automation Script Starts ---
+            echo ">>> Starting deployment process..."
+            
+            # Step 1: Check for project directory and clone or pull accordingly.
+            # If the project directory already exists, navigate into it and pull the latest changes.
+            if [ -d "$PROJECT_DIR" ]; then
+              echo ">>> Project directory exists. Pulling latest changes..."
+              cd "$PROJECT_DIR"
+              git pull
+            # If the project directory does not exist, clone the repository from GitHub.
+            else
+              echo ">>> Project directory not found. Cloning repository..."
+              git clone "$REPO_URL" "$PROJECT_DIR"
+              cd "$PROJECT_DIR"
+            fi
+            
+            echo ">>> Successfully changed directory to: $(pwd)"
+
+            # Step 2: Check for the virtual environment and create it if it doesn't exist.
+            if [ ! -d "venv" ]; then
+              echo ">>> Virtual environment not found. Creating a new one..."
+              python3 -m venv venv
+            fi
+            
+            # Step 3: Activate the virtual environment and install dependencies.
+            echo ">>> Activating virtual environment and installing requirements..."
             source venv/bin/activate
-            
-            # نیازمندی‌ها را نصب کنید
             pip install -r requirements.txt
             
-            # پروسه قبلی را متوقف کنید
+            # Step 4: Restart the application.
+            echo ">>> Restarting the application..."
+            # Find and kill the old running process. '|| true' prevents the script from failing if the process doesn't exist.
             pkill -f 'venv/bin/python app.py' || true
+            # Start the new application in the background using nohup.
+            # Redirect stdout and stderr to a log file.
+            nohup venv/bin/python app.py > app.log 2>&1 &
             
-            # برنامه را با پایتونِ محیط مجازی اجرا کنید (بسیار مهم)
-            nohup venv/bin/python app.py &
+            echo ">>> Deployment finished successfully!"
+
