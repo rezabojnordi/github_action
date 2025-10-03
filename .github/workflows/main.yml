@@ -56,21 +56,23 @@ jobs:
             source venv/bin/activate
             pip install -r requirements.txt
             
-            # Step 4: Install or update PM2, a production process manager.
-            # This is more reliable than nohup. It requires Node.js and npm.
-            if ! command -v pm2 &> /dev/null; then
-                echo ">>> PM2 not found. Installing Node.js and PM2..."
+            # Step 4: Ensure tmux is installed.
+            # tmux is a terminal multiplexer that will run our app in a persistent background session.
+            if ! command -v tmux &> /dev/null; then
+                echo ">>> tmux not found. Installing it..."
                 # The user running this script needs sudo permissions for this part.
                 sudo apt-get update
-                sudo apt-get install -y nodejs npm
-                sudo npm install pm2 -g
+                sudo apt-get install -y tmux
             fi
             
-            # Step 5: Start or restart the application using PM2.
-            echo ">>> Restarting the application with PM2..."
-            # This command will start the app if it's not running, or restart it if it is.
-            # Using the full path to the python interpreter ensures we use the one from our venv.
-            pm2 restart app.py --name my-api --interpreter venv/bin/python || pm2 start app.py --name my-api --interpreter venv/bin/python
+            # Step 5: Start or restart the application using tmux.
+            echo ">>> Restarting the application within a tmux session..."
+            # Kill any existing tmux session with the same name to ensure a clean start.
+            tmux kill-session -t my-api || true
+            
+            # Start a new detached tmux session named 'my-api' and run the python app inside it.
+            # The command inside the session activates the venv and then runs the app.
+            tmux new-session -d -s my-api "source venv/bin/activate && python app.py"
             
             echo ">>> Deployment finished successfully!"
 
