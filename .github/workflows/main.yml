@@ -22,7 +22,7 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             # به پوشه پروژه بروید
-            cd /home/user/my-api
+            cd /home/ubuntu24/my-api
             
             # آخرین تغییرات را بگیرید
             git pull
