@@ -70,9 +70,16 @@ jobs:
             # Kill any existing tmux session with the same name to ensure a clean start.
             tmux kill-session -t my-api || true
             
-            # Start a new detached tmux session named 'my-api' and run the python app inside it.
-            # The command inside the session activates the venv and then runs the app.
-            tmux new-session -d -s my-api "source venv/bin/activate && python app.py"
+            # Start a new detached tmux session named 'my-api'.
+            # We directly call the python interpreter from our virtual environment. This is more robust.
+            tmux new-session -d -s my-api "venv/bin/python app.py"
+            
+            # Add a small delay to allow the session to stabilize or fail.
+            sleep 2
+            
+            # Verify that the tmux session is running. This will help with debugging.
+            echo ">>> Verifying tmux session status:"
+            tmux ls
             
             echo ">>> Deployment finished successfully!"
 
