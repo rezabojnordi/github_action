@@ -33,12 +33,10 @@ jobs:
             echo ">>> Starting deployment process..."
             
             # Step 1: Check for project directory and clone or pull accordingly.
-            # If the project directory already exists, navigate into it and pull the latest changes.
             if [ -d "$PROJECT_DIR" ]; then
               echo ">>> Project directory exists. Pulling latest changes..."
               cd "$PROJECT_DIR"
               git pull
-            # If the project directory does not exist, clone the repository from GitHub.
             else
               echo ">>> Project directory not found. Cloning repository..."
               git clone "$REPO_URL" "$PROJECT_DIR"
@@ -58,13 +56,21 @@ jobs:
             source venv/bin/activate
             pip install -r requirements.txt
             
-            # Step 4: Restart the application.
-            echo ">>> Restarting the application..."
-            # Find and kill the old running process. '|| true' prevents the script from failing if the process doesn't exist.
-            pkill -f 'venv/bin/python app.py' || true
-            # Start the new application in the background using nohup.
-            # Redirect stdout and stderr to a log file.
-            nohup venv/bin/python app.py > app.log 2>&1 &
+            # Step 4: Install or update PM2, a production process manager.
+            # This is more reliable than nohup. It requires Node.js and npm.
+            if ! command -v pm2 &> /dev/null; then
+                echo ">>> PM2 not found. Installing Node.js and PM2..."
+                # The user running this script needs sudo permissions for this part.
+                sudo apt-get update
+                sudo apt-get install -y nodejs npm
+                sudo npm install pm2 -g
+            fi
+            
+            # Step 5: Start or restart the application using PM2.
+            echo ">>> Restarting the application with PM2..."
+            # This command will start the app if it's not running, or restart it if it is.
+            # Using the full path to the python interpreter ensures we use the one from our venv.
+            pm2 restart app.py --name my-api --interpreter venv/bin/python || pm2 start app.py --name my-api --interpreter venv/bin/python
             
             echo ">>> Deployment finished successfully!"
 
