@@ -57,29 +57,29 @@ jobs:
             pip install -r requirements.txt
             
             # Step 4: Ensure tmux is installed.
-            # tmux is a terminal multiplexer that will run our app in a persistent background session.
             if ! command -v tmux &> /dev/null; then
                 echo ">>> tmux not found. Installing it..."
-                # The user running this script needs sudo permissions for this part.
                 sudo apt-get update
                 sudo apt-get install -y tmux
             fi
             
-            # Step 5: Start or restart the application using tmux.
+            # Step 5: Start or restart the application using tmux and log its output.
             echo ">>> Restarting the application within a tmux session..."
-            # Kill any existing tmux session with the same name to ensure a clean start.
             tmux kill-session -t my-api || true
             
-            # Start a new detached tmux session named 'my-api'.
-            # We directly call the python interpreter from our virtual environment. This is more robust.
-            tmux new-session -d -s my-api "venv/bin/python app.py"
+            # NEW: Redirect all output (stdout and stderr) from the app to app.log.
+            # This is the key to debugging silent failures.
+            tmux new-session -d -s my-api "venv/bin/python app.py > app.log 2>&1"
             
-            # Add a small delay to allow the session to stabilize or fail.
-            sleep 2
+            sleep 3 # Give the app a moment to start up or crash.
             
-            # Verify that the tmux session is running. This will help with debugging.
+            # Step 6: Verify and debug.
             echo ">>> Verifying tmux session status:"
             tmux ls
+
+            echo ">>> Displaying the last 20 lines of the application log for debugging:"
+            # NEW: We print the log file. If the app crashed, the error will be shown here.
+            cat app.log
             
-            echo ">>> Deployment finished successfully!"
+            echo ">>> Deployment finished."
 
