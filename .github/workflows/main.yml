@@ -1,0 +1,34 @@
+name: Simple Deploy to Server
+
+# این اکشن فقط زمانی اجرا می‌شود که به شاخه main پوش شود
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest # ماشین مجازی که گیت‌هاب برای اجرای این کار استفاده می‌کند
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3 # این اکشن کد شما را از ریپازیتوری دانلود می‌کند
+
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+         
+            cd /home/ubuntu24/my-api
+            
+            git pull
+            
+            pip3 install -r requirements.txt
+            
+            pkill -f 'python3 app.py' || true
+            
+            nohup python3 app.py &
