@@ -1,6 +1,5 @@
 name: Simple Deploy to Server
 
-# این اکشن فقط زمانی اجرا می‌شود که به شاخه main پوش شود
 on:
   push:
     branches:
@@ -8,11 +7,11 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest # ماشین مجازی که گیت‌هاب برای اجرای این کار استفاده می‌کند
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3 # این اکشن کد شما را از ریپازیتوری دانلود می‌کند
+        uses: actions/checkout@v3
 
       - name: Deploy to Server
         uses: appleboy/ssh-action@master
@@ -22,13 +21,20 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-         
-            cd /home/ubuntu24/my-api
+            # به پوشه پروژه بروید
+            cd /home/user/my-api
             
+            # آخرین تغییرات را بگیرید
             git pull
             
-            pip3 install -r requirements.txt
+            # محیط مجازی را فعال کنید (بسیار مهم)
+            source venv/bin/activate
             
-            pkill -f 'python3 app.py' || true
+            # نیازمندی‌ها را نصب کنید
+            pip install -r requirements.txt
             
-            nohup python3 app.py &
+            # پروسه قبلی را متوقف کنید
+            pkill -f 'venv/bin/python app.py' || true
+            
+            # برنامه را با پایتونِ محیط مجازی اجرا کنید (بسیار مهم)
+            nohup venv/bin/python app.py &
